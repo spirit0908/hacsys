@@ -1,0 +1,20 @@
+
+#include "FIFO.h"
+#include "def.h"
+
+T_CAN_FIFO CAN_RX_FIFO;
+#define CAN_RX_FIFO_BUFF_LENGTH    20
+T_CAN_MESSAGE CAN_RX_FIFO_Buff[CAN_RX_FIFO_BUFF_LENGTH]; // Create the buffer
+
+T_CAN_FIFO CAN_TX_FIFO;
+#define CAN_TX_FIFO_LENGTH     5
+T_CAN_MESSAGE CAN_TX_FIFO_Buff[CAN_TX_FIFO_LENGTH];
+
+
+FIFO_TAB_T FIFO_table[]=
+{
+    {&CAN_RX_FIFO, CAN_RX_FIFO_Buff, CAN_RX_FIFO_BUFF_LENGTH},
+    {&CAN_TX_FIFO, CAN_TX_FIFO_Buff, CAN_TX_FIFO_LENGTH},
+    {0, 0, 0}
+};
+
