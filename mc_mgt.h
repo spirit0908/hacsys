@@ -15,11 +15,12 @@ extern "C" {
 typedef enum 
 {
     MC_INIT=0,
-    MC_DRIVER_INIT,   
-    MC_CONFIG_INIT,
-    MC_PRE_RUN,
-    MC_RUN,
-    MC_SLEEP
+    MC_DRIVER_INIT=1,
+    MC_CONFIG_INIT=2,
+    MC_PRE_RUN=3,
+    MC_RUN_MODE=4,
+    MC_IDLE_MODE=5,
+    MC_SLEEP_MODE=6
 }T_MC_STATE;
 
 

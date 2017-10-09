@@ -174,10 +174,11 @@ void CAN_Start(void)
 {
     // Enable tranceiver
     CanTrcvEnable();
+    CanSetMode(CAN_NORMAL_OP_MODE);
 
     //Enable interrupts
     PIE3bits.IRXIE = DISABLE; // CAN Invalid Received Message Interrupt Enable bit
-    PIE3bits.WAKIE = DISABLE; // CAN bus Activity Wake-up Interrupt Enable bit
+    PIE3bits.WAKIE = ENABLE; // CAN bus Activity Wake-up Interrupt Enable bit
     PIE3bits.ERRIE = DISABLE; // CAN bus Error Interrupt Enable bit
     PIE3bits.TXB2IE = DISABLE; // CAN Transmit Buffer 2 Interrupt Enable bit
     PIE3bits.TXB1IE = DISABLE; // CAN Transmit Buffer 1 Interrupt Enable bit(1)
@@ -190,7 +191,7 @@ void CAN_Stop(void)
 {
     // Disable interrupts:
     PIE3bits.IRXIE = DISABLE; // CAN Invalid Received Message Interrupt Enable bit
-    PIE3bits.WAKIE = DISABLE; // CAN bus Activity Wake-up Interrupt Enable bit
+    PIE3bits.WAKIE = ENABLE;  // CAN bus Activity Wake-up Interrupt Enable bit
     PIE3bits.ERRIE = DISABLE; // CAN bus Error Interrupt Enable bit
     PIE3bits.TXB2IE = DISABLE; // CAN Transmit Buffer 2 Interrupt Enable bit
     PIE3bits.TXB1IE = DISABLE; // CAN Transmit Buffer 1 Interrupt Enable bit(1)
@@ -199,12 +200,16 @@ void CAN_Stop(void)
     PIE3bits.RXB0IE = DISABLE; // CAN Receive Buffer 0 Interrupt Enable bit
     
     // Disable tranceiver
-    CAN_EN = 1;
+    CanTrcvDisable();
+    
+    CanSetMode(CAN_DISABLE_MODE);
 }
 
-/*********************************************************************
- *                Check the buffers, if it have message
- *********************************************************************/
+void CanSetMode( unsigned char mode )
+{
+    CANCON = ( (CANCON & 0x1F) | (mode<<5) );
+}
+
 unsigned char Can_Receive(unsigned char ctrl, unsigned int *addr, unsigned char *lengh, unsigned char *data)
 {
     unsigned char *pData, i;
@@ -242,7 +247,6 @@ unsigned char Can_Receive(unsigned char ctrl, unsigned int *addr, unsigned char 
                 data[5] = RXB0D5;
                 data[6] = RXB0D6;
                 data[7] = RXB0D7;
-                
                 
                 RXB0CONbits.RXFUL = 0;
                 retVal = ret_OK;

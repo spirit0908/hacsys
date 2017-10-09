@@ -17,11 +17,11 @@ void IO_Init(void)
     
     //Configure IO
     // 0 Output - 1 Input
-    TRISA = 0b11000000;  //(osc   | osc   | LED4 | LED3 | LED2    | LED1   | Vlum | Vbp)
-    TRISB = 0b11111001;  //(PGD   | PGC   | -    | -    | CANRX   | CAN_TX |CAN_EN| - )
-    TRISC = 0b11111111;  //(Rx_TTL| Tx_TTL| -    | I2C_SDA | I2C_SCL | -   | -   | -)
-    TRISD = 0b11111011;  //(Rx_TTL| Tx_TTL| -    | I2C_SDA | I2C_SCL | -   | -   | -)
-    TRISE = 0b11111011;  //(Rx_TTL| Tx_TTL| -    | I2C_SDA | I2C_SCL | -   | -   | -)
+    TRISA = 0b11000000;  //(osc   | osc  | OUT5 | OUT4 | OUT3  | OUT2   | OUT1   | OUT0  )
+    TRISB = 0b11111001;  //(PGD   | PGC  |  -   |  -   | CANRX | CAN_TX | CAN_EN | 50Hz  )
+    TRISC = 0b11110000;  //(Rx_TTL|Tx_TTL|  -   |  -   | OUT12 | OUT11  | OUT10  | OUT9  )
+    TRISD = 0b11111000;  //(  -   |   -  |  -   |  -   |   -   | OUT15  | OUT14  | OUT13 )
+    TRISE = 0b11111000;  //(  -   |   -  |  -   |  -   |   -   | OUT8   | OUT7   | OUT6  )
     
     //By default, set all IO as digital (erased by ADC module if used) 
     ADCON1 = 0b00001111;
@@ -35,12 +35,12 @@ T_output_mapping PinMapping[16] =
 	unsigned char portPin;
 */
     
-	{ 2u, PORT_A, PIN0},	// RA0
-	{ 3u, PORT_A, PIN1},	// output 1
-	{ 4u, PORT_A, PIN2},	// output 2
-	{ 5u, PORT_A, PIN3},	// output 3
-	{ 6u, PORT_A, PIN4},	// output 4
-	{ 7u, PORT_A, PIN5},	// output 5
+	{ 2u, PORT_A, PIN0},  // output 0
+	{ 3u, PORT_A, PIN1},  // output 1
+	{ 4u, PORT_A, PIN2},  // output 2
+	{ 5u, PORT_A, PIN3},  // output 3
+	{ 6u, PORT_A, PIN4},  // output 4
+	{ 7u, PORT_A, PIN5},  // output 5
 	{ 8u, PORT_E, PIN0},  // output 6
 	{ 9u, PORT_E, PIN1},  // output 7
 	{ 10u, PORT_E, PIN2}, // output 8
