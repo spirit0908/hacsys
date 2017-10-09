@@ -14,8 +14,33 @@ extern "C" {
 
 #include "Task.h"
     
-#define TASK_SCHEDULE_MAX 20 //to be moved to Task_cfg.h
-#define TASK_MANAGER_IT_CYCLE 2 /*ms*/
+#define TASK_SCHEDULE_MAX 20
+
+/* Timer 0 */
+//20ms period
+#define TIMER0_PERIOD   0x63BF
+#define TIMER0_PRESCAL  0x00
+#define TASK_MANAGER_IT_CYCLE 20 /*ms*/
+//10ms period
+//#define TIMER0_PERIOD   0xB1DF
+//#define TIMER0_PRESCAL  0x00
+//#define TASK_MANAGER_IT_CYCLE 10 /*ms*/
+//5ms period
+//#define TIMER0_PERIOD   0xD8EF
+//#define TIMER0_PRESCAL  0x00
+//#define TASK_MANAGER_IT_CYCLE 5 /*ms*/
+//2ms period
+//#define TIMER0_PERIOD   0xF05F
+//#define TIMER0_PRESCAL  0x00
+//#define TASK_MANAGER_IT_CYCLE 2 /*ms*/
+
+
+/* Timer 1 */
+//10ms period
+#define TIMER1_PERIOD   0xB1DF
+#define TIMER1_PRESCAL  0x00
+
+
 
 
     

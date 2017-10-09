@@ -7,6 +7,7 @@
 #include "FIFO.h"
 #include "interrupt.h"
 #include "Task_cfg.h"
+#include "IO.h"
 
 
 //void InterruptHandlerHigh(void);
@@ -15,6 +16,12 @@
 unsigned int CanRxMsg_addr;
 unsigned char CanRxMsg_lengh;
 unsigned char CanRxMsg_data[8];
+
+unsigned int dim_table[]={0xFFFF, 0xED57, 0xE6C7, 0xE1E8, 0xDDAD, 0xD9B7, 0xD5CB, 0xD1B4, 0xCD27, 0xC781};
+
+unsigned char dim_idx=0;
+unsigned char testVar=0, cpt_Tmr1=0;
+unsigned char cpt_100Hz;
 
 /*#pragma code InterruptVectorHigh = 0x08 // High ISR
 
@@ -42,10 +49,10 @@ void interrupt high_priority High_ISR(void) // High interrupt handler
     // --- Timer IT ---
 
     if (INTCONbits.TMR0IF) // TMR0IF 
-    {
-        TMR0H = 0xB1; //0xFF; //0xF4 ;
-        TMR0L = 0xDF; //0x37; //0x24 ;
-
+    {        
+        TMR0H = (TIMER0_PERIOD>>8);
+        TMR0L = (TIMER0_PERIOD&0xFF);
+        
         Task_Manager_IT();
 
         INTCONbits.TMR0IF = 0; //clear interrupt flag
@@ -53,9 +60,11 @@ void interrupt high_priority High_ISR(void) // High interrupt handler
 
     if (PIR1bits.TMR1IF) // TMR1IF 
     {
-        TMR1H = 0xB1;
-        TMR1L = 0xDF;
-    
+        TMR1H = 0xFF;
+        TMR1L = 0xFF;
+
+        IOsetState(&PinMapping[0], 1);
+           
         PIR1bits.TMR1IF = 0;
     }
 
@@ -68,6 +77,12 @@ void interrupt high_priority High_ISR(void) // High interrupt handler
     if (INTCONbits.INT0IF) // signal 100Hz
     {
         INTCONbits.INT0IF = 0;
+        PIR1bits.TMR1IF=0;
+        
+        IOsetState(&PinMapping[0], 0);
+        
+        TMR1H = dim_table[dim_idx]>>8;
+        TMR1L = dim_table[dim_idx]&0xFF;
     }
 
 
@@ -154,7 +169,7 @@ void interrupt low_priority Low_ISR(void) // Low interrupt handler
     if( PIR3bits.ERRIF )
     {
         PIR3bits.ERRIF=0;
-    }    
+    }
 
     // *** CAN Transmit Buffer 2 ***
     if( PIR3bits.TXB2IF )
@@ -192,7 +207,9 @@ void interrupt low_priority Low_ISR(void) // Low interrupt handler
 
 //#pragma code
 
-void IT_Init(void) {
+void IT_Init(void)
+{
+    RCONbits.IPEN = 1; //Enable IT pririty
     INTCONbits.GIE = 0;  // Disables all interrupt
     INTCONbits.PEIE = 0; // Disable peripheral interrupts
 
@@ -206,7 +223,7 @@ void IT_Init(void) {
     //				 1:4   = 001
     //				 1:256 = 111
 
-    // - Timer : 100ms 
+    // - Timer : 10ms 
     // - prescal = 62500, TMR=62500=0xF424
     // - timer 16 bits
     T0CON = 0x00 |
@@ -217,12 +234,13 @@ void IT_Init(void) {
             (1 << 3) | // PSA    - 1:no prescal - 0:prescal (see below)
             (0b000); // T0PS2:T0PS0 - prescal 000:1/2 - 111:1/256
 
-    TMR0H = 0xFF; // TMR0 = 0xF424
-    TMR0L = 0x37;
+    //Load timer
+    TMR0H = (TIMER0_PERIOD >> 8);
+    TMR0L = (TIMER0_PERIOD & 0xFF);
 
     T0CONbits.TMR0ON = ENABLE; //Disable Timer0 (TMR0ON)
 
-    INTCON2bits.TMR0IP = 0; // TMR0 priority
+    INTCON2bits.TMR0IP = PRIORITY_HIGH; // TMR0 priority
     INTCONbits.TMR0IE = 1; // TMR0 IT enable state
     INTCONbits.TMR0IF = 0; // Reset TMR0 IT flag
 
@@ -242,11 +260,14 @@ void IT_Init(void) {
 //    TMR1L = 0xDF;
     
     //2ms interrupt
-    TMR1H = 0xF0;
-    TMR1L = 0x5F;
-            
+//    TMR1H = 0xF0;
+//    TMR1L = 0x5F;
+    
+    TMR1H = TIMER1_PERIOD>>8;
+    TMR1L = TIMER1_PERIOD&0xFF;
+    
     T1CONbits.TMR1ON = ENABLE;
-    IPR1bits.TMR1IP  = PRIORITY_LOW;
+    IPR1bits.TMR1IP  = PRIORITY_HIGH;
     PIE1bits.TMR1IE  = ENABLE;
     PIR1bits.TMR1IF  = 0;
     
@@ -263,9 +284,10 @@ void IT_Init(void) {
     PIR2bits.TMR3IF  = 0;
     
     // *** INT0/RB0 : ***
-    INTCON2bits.INTEDG0 = FALLING_EDGE; // edge select
+    INTCON2bits.INTEDG0 = RISING_EDGE; // FALLING_EDGE; // edge select
+    //priority: always PRIORITY_HIGH
     INTCONbits.INT0IF = 0; // Reset INT0 flag
-    INTCONbits.INT0IE = DISABLE; // INT0 enable state
+    INTCONbits.INT0IE = ENABLE; // INT0 enable state
 
     // *** INT1/RB1 ***
     INTCON2bits.INTEDG1 = FALLING_EDGE; // edge select
@@ -346,5 +368,4 @@ void CLI(void) // Cleat Interrupt
     INTCONbits.GIE = 0;
     INTCONbits.PEIE = 0;
 }
-
 

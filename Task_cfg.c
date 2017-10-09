@@ -23,7 +23,7 @@ T_TASK Task_List[] =
 };
 #define TASK_TOTAL_NUM (sizeof(Task_List)/sizeof(T_TASK))
 
-
+extern unsigned char dim_idx;
 
 //*********************************
 // Synchronous tasks implementation
@@ -41,9 +41,18 @@ unsigned char Task_50ms(void)
     return 0;
 }
 
+unsigned char cpt_test=0;
 unsigned char Task_100ms(void)
 {
     LightOrderProcess();
+    
+    cpt_test++;
+    if( cpt_test >= 10 )
+    {
+        cpt_test=0;
+        // every 1sec
+        LED9 = !LED9;
+    }
     
     return 0;
 }
@@ -52,6 +61,15 @@ unsigned char Task_1s(void)
 {
     LightSendStatus();
     
+    if(dim_idx < 9 )
+    {
+        dim_idx++;
+    }
+    else
+    {
+        dim_idx = 0;
+    }
+        
     return 0;
 }
 
