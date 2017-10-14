@@ -12,7 +12,7 @@ extern "C" {
 #endif
 
 //#include "FIFO.h"
-
+#include "def.h"
     
 // Light orders
 #define LIGHT_OFF                     0x10
@@ -62,6 +62,8 @@ typedef struct
     unsigned int  timer_val;            // Current timer value
 } T_LightState;
     
+
+extern T_LightState Light_state[MAX_LIGHT_NUM];
 
 void Light_Init(void);
 void Light_Init_cfg(void);

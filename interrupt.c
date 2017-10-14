@@ -8,6 +8,7 @@
 #include "interrupt.h"
 #include "Task_cfg.h"
 #include "IO.h"
+#include "Light.h"
 
 
 //void InterruptHandlerHigh(void);
@@ -17,7 +18,7 @@ unsigned int CanRxMsg_addr;
 unsigned char CanRxMsg_lengh;
 unsigned char CanRxMsg_data[8];
 
-unsigned int dim_table[]={0xFFFF, 0xED57, 0xE6C7, 0xE1E8, 0xDDAD, 0xD9B7, 0xD5CB, 0xD1B4, 0xCD27, 0xC781};
+unsigned int dim_table[]={0xEBD7, 0xF9E7, 0xFB4F, 0xFBDB, 0xFC03, 0xFC03, 0xFBDB, 0xFB4F, 0xF9E7, 0xEBD7};
 
 unsigned char dim_idx=0;
 unsigned char testVar=0, cpt_Tmr1=0;
@@ -43,6 +44,8 @@ void InterruptVectorLow(void) {
 //void InterruptHandlerHigh(void)
 void interrupt high_priority High_ISR(void) // High interrupt handler
 {
+    int i; 
+    
     INTCONbits.GIE = 0;
     INTCONbits.PEIE = 0;
 
@@ -60,10 +63,22 @@ void interrupt high_priority High_ISR(void) // High interrupt handler
 
     if (PIR1bits.TMR1IF) // TMR1IF 
     {
-        TMR1H = 0xFF;
-        TMR1L = 0xFF;
-
-        IOsetState(&PinMapping[0], 1);
+        if( dim_idx < 9)
+        {
+            dim_idx++ ;
+        }
+        
+        for( i=0; i<MAX_LIGHT_NUM; i++)
+        {
+            if( (Light_state[i].state >= (10-dim_idx)) && (Light_state[i].state <= 10) )
+            {
+                IOsetState(&PinMapping[i], 1);
+            }
+        }
+        
+        // Reload timer1
+        TMR1H = dim_table[dim_idx]>>8;
+        TMR1L = dim_table[dim_idx]&0xFF;
            
         PIR1bits.TMR1IF = 0;
     }
@@ -79,15 +94,23 @@ void interrupt high_priority High_ISR(void) // High interrupt handler
         INTCONbits.INT0IF = 0;
         PIR1bits.TMR1IF=0;
         
-        IOsetState(&PinMapping[0], 0);
+        dim_idx = 0;
+        
+        for( i=0; i<MAX_LIGHT_NUM; i++)
+        {
+            // Reset pin only if light is dimmable AND not at max brightness
+            if( Light_state[i].state < 10 )
+            {
+                // Dimmable light, reset pin
+                IOsetState(&PinMapping[i], 0);
+            }
+        }
         
         TMR1H = dim_table[dim_idx]>>8;
         TMR1L = dim_table[dim_idx]&0xFF;
     }
 
-
     // --- CAN IT ---
-
     if (PIR3bits.RXB0IF) // RX0 interrupt
     {
         Can_Receive(CAN_CTRL_0, &CanRxMsg_addr, &CanRxMsg_lengh, CanRxMsg_data);
