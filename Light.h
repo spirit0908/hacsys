@@ -44,6 +44,10 @@ enum
     Light_ID_MAX
 };
     
+#define LIGHT_TYPE_ACTIVE   (1<<7)
+#define LIGHT_TYPE_DIMMABLE (1<<6)
+#define LIGHT_TYPE_TIMER    (1<<5)
+
 
 typedef struct
 {

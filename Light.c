@@ -70,7 +70,7 @@ unsigned char LightOrderTmt( unsigned char LightId, unsigned char Order, unsigne
         return ret_NOK;
     }
     
-    if( (Light_state[LightId].type &= 0x80)!=0x80 ) // check if output is inhibited
+    if( (Light_state[LightId].type &= LIGHT_TYPE_ACTIVE) == 0 ) // check if output is inhibited
     {
         if( Order != LIGHT_RELEASE_OUTPUT)
         {
@@ -125,20 +125,27 @@ unsigned char LightOrderTmt( unsigned char LightId, unsigned char Order, unsigne
             else
             {
                 // Light is OFF
-                // First check for last brightness
-                if( Light_state[LightId].brightness_last > 0)
+                if( Light_state[LightId].type == LIGHT_TYPE_DIMMABLE)
                 {
-                    // Restore last known bright
+                    // First check for last brightness
+                    if( Light_state[LightId].brightness_last > 0)
+                    {
+                        // Restore last known bright
+                        Light_state[LightId].state = Light_state[LightId].brightness_last;
+                    }
+                    else
+                    {
+                        // Last brightness is unknown. Put default value and switch ON
+                        Light_state[LightId].brightness_last = Light_state[LightId].brightness_default;
+                    }
+                
+                    // Switch it ON, at the last known brightness.
                     Light_state[LightId].state = Light_state[LightId].brightness_last;
                 }
                 else
                 {
-                    // Last brightness is unknown. Put default value and switch ON
-                    Light_state[LightId].brightness_last = Light_state[LightId].brightness_default;
+                    Light_state[LightId].state = 0xFF; 
                 }
-
-                // Switch it ON, at the last known brightness.
-                Light_state[LightId].state = Light_state[LightId].brightness_last;
             }
         break;
 
@@ -149,67 +156,72 @@ unsigned char LightOrderTmt( unsigned char LightId, unsigned char Order, unsigne
 
         case LIGHT_ON_SPECIFIED_BRIGHTNESS:
             brightness = param;
-            
-            // Check if current light is dimmable
-            if( Light_state[LightId].state > 0 && Light_state[LightId].state < 0xFF ) // Not OFF or at max
-            {
-                // Save current brightness for next use.
-                Light_state[LightId].brightness_last = Light_state[LightId].state;
-            }
 
-            Light_state[LightId].timer_val = 0;
-            if( brightness > 0)
-                Light_state[LightId].state		= brightness; // Set here sent value for brightness
+            if( Light_state[LightId].type & LIGHT_TYPE_DIMMABLE )
+            {
+                Light_state[LightId].timer_val = 0;
+                if( brightness > 0 )
+                    Light_state[LightId].state = brightness;
+            }
         break;
 
         case LIGHT_ON_DEFAULT_BRIGHTNESS:
-            if( Light_state[LightId].state > 0 )
+            if( Light_state[LightId].type & LIGHT_TYPE_DIMMABLE )
             {
-                Light_state[LightId].state = Light_state[LightId].brightness_default;
-                Light_state[LightId].timer_val = 0;
+                if( Light_state[LightId].state > 0 )
+                {
+                    Light_state[LightId].state = Light_state[LightId].brightness_default;
+                    Light_state[LightId].timer_val = 0;
+                }
             }
         break;
 
         case LIGHT_BRIGHTNESS_MORE:
-            if( Light_state[LightId].state > 0 )
+            if( Light_state[LightId].type & LIGHT_TYPE_DIMMABLE )
             {
-                //Light is already ON. Add brightness if max value is not reached
-                if( Light_state[LightId].state < 0xFF )
-                    Light_state[LightId].state += 0x05;
+                if( Light_state[LightId].state > 0 )
+                {
+                    //Light is already ON. Add brightness if max value is not reached
+                    if( Light_state[LightId].state < 10 )
+                        Light_state[LightId].state += 1;
+                }
+                else
+                {
+                    // Light was OFF, put it on last known brightness:
+                    Light_state[LightId].state = Light_state[LightId].brightness_last;
+                }
+                
+                // Reset any timer
+                Light_state[LightId].timer_val = 0;
             }
-            else
-            {
-                // Light was OFF, put it on last known brightness:
-                Light_state[LightId].state = Light_state[LightId].brightness_last;
-            }
-
-            // Reset any timer
-            Light_state[LightId].timer_val = 0;
         break;
 
         case LIGHT_BRIGHTNESS_LESS:
-            if( Light_state[LightId].state > 0x05 )
+            if( Light_state[LightId].type & LIGHT_TYPE_DIMMABLE )
             {
-                // Brightness is more than min value. Decrease it.
-                Light_state[LightId].state -= 0x01;
-            }
-            else
-            {
-                // Light is less than min accepted brightness value. Switch it OFF.
-                Light_state[LightId].state = 0x00;
-            }
+                if( Light_state[LightId].state > 1 )
+                {
+                    // Brightness is more than min value. Decrease it.
+                    Light_state[LightId].state -= 1;
+                }
+                else
+                {
+                    // Light is less than min accepted brightness value. Switch it OFF.
+                    Light_state[LightId].state = 0x00;
+                }
 
-            // Reset any timer
-            Light_state[LightId].timer_val = 0;
+                // Reset any timer
+                Light_state[LightId].timer_val = 0;
+            }
         break;
 
         case LIGHT_ON_TIMER:
-            if( Light_state[LightId].state == 0) // Light is OFF
+            if( Light_state[LightId].state == 0 ) // Light is OFF
             {
                 // Light was OFF, set it to max brightness
                 Light_state[LightId].state = 0xFF;
             }
-            else if( Light_state[LightId].state < 0xFF )
+            else if( Light_state[LightId].state < 10 )
             {
                 // Light was ON but not at max. Save the current brightness for next use
                 Light_state[LightId].brightness_last = Light_state[LightId].state;
@@ -247,7 +259,7 @@ unsigned char LightOrderTmt( unsigned char LightId, unsigned char Order, unsigne
             Light_state[LightId].timer_val = 0x0000;
 
             // Disable output:
-            Light_state[LightId].type &= 0x7F;
+            Light_state[LightId].type &= ~(LIGHT_TYPE_ACTIVE);
         break;
 
         case LIGHT_RELEASE_OUTPUT:
@@ -256,7 +268,7 @@ unsigned char LightOrderTmt( unsigned char LightId, unsigned char Order, unsigne
             Light_state[LightId].timer_val = 0x0000;
 
             // Enable output:
-            Light_state[LightId].type |= 0x80;
+            Light_state[LightId].type |= LIGHT_TYPE_ACTIVE;
         break;
 
         default:
@@ -276,10 +288,10 @@ void LightOrderProcess(void)
     for( i=0; i<MAX_LIGHT_NUM; i++)
     {
         if( Light_state[i].curState != Light_state[i].state)
-        { 
+        {
             pinnum = Light_state[i].outPin;
             pinstate = Light_state[i].state;
-            IOsetState( &PinMapping[pinnum], pinstate);
+            //IOsetState( &PinMapping[pinnum], pinstate);
             
             Light_state[i].curState = Light_state[i].state;
             LightSendOutputStatus(i);

@@ -61,15 +61,6 @@ unsigned char Task_1s(void)
 {
     LightSendStatus();
     
-    if(dim_idx < 9 )
-    {
-        dim_idx++;
-    }
-    else
-    {
-        dim_idx = 0;
-    }
-        
     return 0;
 }
 
@@ -78,8 +69,6 @@ unsigned char Task_1s(void)
 //**********************************
 unsigned char Task_CanMsgProcess(void)
 {
-    
-    
     unsigned int CanId;
     unsigned char msgLen, msgData[8];
     unsigned char i, NbMsgReceived;
